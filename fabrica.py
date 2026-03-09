@@ -19,10 +19,33 @@ from dominio import (
     Prestamo, ActividadExtracurricular
 )
 
-
 class Fabrica:
+    """
+    Fábrica de objetos del dominio.
+
+    Su responsabilidad es analizar el diccionario recibido y crear la
+    instancia de la clase correspondiente del modelo de dominio.
+
+    Cada tipo de entidad se identifica por la presencia de un campo
+    clave dentro del diccionario.
+    """
 
     def crear(self, datos: dict):
+        """
+        Determina qué tipo de entidad debe crearse y delega
+        la construcción al método específico.
+
+        Args:
+            datos (dict): Diccionario con los datos de la entidad.
+
+        Returns:
+            object: Instancia de la clase de dominio correspondiente.
+
+        Raises:
+            ValueError: Si el diccionario no corresponde a ninguna
+            entidad conocida del sistema.
+        """
+
         if 'numero_matricula'  in datos: return self._crear_estudiante(datos)
         if 'codigo_empleado'   in datos: return self._crear_profesor(datos)
         if 'codigo_asignatura' in datos: return self._crear_asignatura(datos)
@@ -34,9 +57,23 @@ class Fabrica:
         if 'codigo_material'   in datos: return self._crear_material(datos)
         if 'codigo_prestamo'   in datos: return self._crear_prestamo(datos)
         if 'codigo_actividad'  in datos: return self._crear_actividad(datos)
+
         raise ValueError("El diccionario no corresponde a ninguna entidad conocida.")
 
+
     def _crear_estudiante(self, datos: dict) -> Estudiante:
+        """
+        Crea un objeto Estudiante a partir de un diccionario.
+
+        Convierte campos necesarios como fechas y asigna valores
+        opcionales cuando están presentes.
+
+        Args:
+            datos (dict): Información del estudiante.
+
+        Returns:
+            Estudiante: Instancia del modelo de dominio Estudiante.
+        """
         return Estudiante(
             numero_matricula    = datos['numero_matricula'],
             nombres             = datos['nombres'],
@@ -52,7 +89,18 @@ class Fabrica:
             fotografia          = datos.get('fotografia'),
         )
 
+
     def _crear_profesor(self, datos: dict) -> Profesor:
+        """
+        Construye un objeto Profesor utilizando la información
+        proporcionada en el diccionario.
+
+        Args:
+            datos (dict): Datos del profesor.
+
+        Returns:
+            Profesor: Instancia del modelo Profesor.
+        """
         return Profesor(
             codigo_empleado      = datos['codigo_empleado'],
             nombres              = datos['nombres'],
@@ -70,7 +118,18 @@ class Fabrica:
             telefono             = datos.get('telefono'),
         )
 
+
     def _crear_asignatura(self, datos: dict) -> Asignatura:
+        """
+        Genera una instancia de Asignatura a partir del diccionario
+        recibido.
+
+        Args:
+            datos (dict): Información de la asignatura.
+
+        Returns:
+            Asignatura: Objeto del dominio asignatura.
+        """
         return Asignatura(
             codigo_asignatura     = datos['codigo_asignatura'],
             nombre                = datos['nombre'],
@@ -84,7 +143,18 @@ class Fabrica:
             bibliografia          = datos.get('bibliografia'),
         )
 
+
     def _crear_curso(self, datos: dict) -> Curso:
+        """
+        Crea un objeto Curso que representa la oferta de una asignatura
+        en un periodo académico específico.
+
+        Args:
+            datos (dict): Datos del curso.
+
+        Returns:
+            Curso: Instancia del curso académico.
+        """
         return Curso(
             codigo_curso            = datos['codigo_curso'],
             periodo_academico       = datos['periodo_academico'],
@@ -98,7 +168,17 @@ class Fabrica:
             lista_estudiantes       = datos.get('lista_estudiantes', []),
         )
 
+
     def _crear_periodo(self, datos: dict) -> PeriodoAcademico:
+        """
+        Construye un objeto PeriodoAcademico.
+
+        Args:
+            datos (dict): Información del periodo académico.
+
+        Returns:
+            PeriodoAcademico: Instancia del periodo.
+        """
         return PeriodoAcademico(
             codigo_periodo         = datos['codigo_periodo'],
             descripcion            = datos['descripcion'],
@@ -108,7 +188,18 @@ class Fabrica:
             calendario_actividades = datos.get('calendario_actividades'),
         )
 
+
     def _crear_calificacion(self, datos: dict) -> Calificacion:
+        """
+        Genera una instancia de Calificacion que representa
+        una evaluación realizada a un estudiante.
+
+        Args:
+            datos (dict): Datos de la calificación.
+
+        Returns:
+            Calificacion: Objeto calificación.
+        """
         return Calificacion(
             estudiante      = datos['estudiante'],
             curso           = datos['curso'],
@@ -119,7 +210,18 @@ class Fabrica:
             observaciones   = datos.get('observaciones'),
         )
 
+
     def _crear_aula(self, datos: dict) -> Aula:
+        """
+        Construye un objeto Aula que representa un espacio físico
+        dentro de la institución.
+
+        Args:
+            datos (dict): Información del aula.
+
+        Returns:
+            Aula: Instancia del aula.
+        """
         return Aula(
             id_aula       = datos['id_aula'],
             edificio      = datos['edificio'],
@@ -130,7 +232,18 @@ class Fabrica:
             equipamiento  = datos.get('equipamiento'),
         )
 
+
     def _crear_plan(self, datos: dict) -> PlanDeEstudios:
+        """
+        Crea un objeto PlanDeEstudios que describe la estructura
+        curricular de una carrera.
+
+        Args:
+            datos (dict): Información del plan.
+
+        Returns:
+            PlanDeEstudios: Instancia del plan académico.
+        """
         return PlanDeEstudios(
             codigo_plan            = datos['codigo_plan'],
             carrera                = datos['carrera'],
@@ -140,7 +253,18 @@ class Fabrica:
             requisitos_graduacion  = datos['requisitos_graduacion'],
         )
 
+
     def _crear_material(self, datos: dict) -> MaterialBibliografico:
+        """
+        Genera una instancia de MaterialBibliografico que representa
+        un recurso disponible en biblioteca.
+
+        Args:
+            datos (dict): Información del material.
+
+        Returns:
+            MaterialBibliografico: Objeto del catálogo bibliográfico.
+        """
         return MaterialBibliografico(
             codigo_material      = datos['codigo_material'],
             titulo               = datos['titulo'],
@@ -155,7 +279,18 @@ class Fabrica:
             cantidad_ejemplares  = int(datos['cantidad_ejemplares']) if datos.get('cantidad_ejemplares') else None,
         )
 
+
     def _crear_prestamo(self, datos: dict) -> Prestamo:
+        """
+        Crea un objeto Prestamo que representa el registro de
+        préstamo de un material bibliográfico.
+
+        Args:
+            datos (dict): Información del préstamo.
+
+        Returns:
+            Prestamo: Instancia del préstamo registrado.
+        """
         return Prestamo(
             codigo_prestamo       = datos['codigo_prestamo'],
             fecha_prestamo        = date.fromisoformat(datos['fecha_prestamo']),
@@ -166,7 +301,18 @@ class Fabrica:
             multa_aplicada        = float(datos['multa_aplicada']) if datos.get('multa_aplicada') else None,
         )
 
+
     def _crear_actividad(self, datos: dict) -> ActividadExtracurricular:
+        """
+        Genera una instancia de ActividadExtracurricular que representa
+        una actividad institucional fuera del currículo académico.
+
+        Args:
+            datos (dict): Información de la actividad.
+
+        Returns:
+            ActividadExtracurricular: Objeto actividad.
+        """
         return ActividadExtracurricular(
             codigo_actividad     = datos['codigo_actividad'],
             nombre               = datos['nombre'],

@@ -24,34 +24,87 @@ from typing import Optional, Any
 import uuid
 
 class Serializador:
+    """
+    Utilidad encargada de convertir objetos del dominio en estructuras
+    de datos serializables (diccionarios).
 
-    #Es un método que recibe un objeto, extrae sus atributos usando vars(), recorre cada atributo y 
-    #convierte sus valores a tipos serializables antes de devolver un diccionario.
+    Se utiliza principalmente para transformar objetos complejos en
+    representaciones que puedan almacenarse, transmitirse o imprimirse.
+    """
+
     @staticmethod
     def convertir(objeto: Any) -> dict:
+        """
+        Convierte un objeto en un diccionario serializable.
+
+        El método obtiene los atributos del objeto utilizando `vars()`
+        y construye un nuevo diccionario donde cada valor es procesado
+        por `_convertir_valor` para asegurar que sea serializable.
+
+        Args:
+            objeto (Any): Instancia de una clase de dominio.
+
+        Returns:
+            dict: Diccionario con los atributos del objeto y valores
+            convertidos a formatos serializables.
+        """
+
         return {
-            #comprensión de diccionario.
             clave: Serializador._convertir_valor(valor)
             for clave, valor in vars(objeto).items()
         }
-    
-    #El método recibe un valor de cualquier tipo y devuelve ese valor convertido a un formato serializable, 
-    # o lo devuelve igual si no necesita transformación.
+
+
     @staticmethod
     def _convertir_valor(valor: Any) -> Any:
+        """
+        Convierte un valor a un formato serializable si es necesario.
+
+        Este método maneja distintos tipos de datos que normalmente
+        no pueden almacenarse o serializarse directamente, aplicando
+        las conversiones correspondientes.
+
+        Reglas de conversión:
+        - date / datetime  -> cadena en formato ISO
+        - UUID             -> cadena
+        - bytes            -> None (se descarta el contenido binario)
+        - list             -> se convierte recursivamente cada elemento
+        - dict             -> se convierte recursivamente cada valor
+        - float            -> redondeo a dos decimales
+        - otros tipos      -> se retornan sin modificación
+
+        Args:
+            valor (Any): Valor a convertir.
+
+        Returns:
+            Any: Valor convertido a un tipo serializable o el mismo
+            valor si no requiere transformación.
+        """
 
         if isinstance(valor, (date, datetime)):
             return valor.isoformat()
+
         if isinstance(valor, uuid.UUID):
             return str(valor)
+
         if isinstance(valor, bytes):
             return None
+
         if isinstance(valor, list):
-            return [Serializador._convertir_valor(item) for item in valor]
+            return [
+                Serializador._convertir_valor(item)
+                for item in valor
+            ]
+
         if isinstance(valor, dict):
-            return {k: Serializador._convertir_valor(v) for k, v in valor.items()}
+            return {
+                k: Serializador._convertir_valor(v)
+                for k, v in valor.items()
+            }
+
         if isinstance(valor, float):
             return round(valor, 2)
+
         return valor
     
 #1
