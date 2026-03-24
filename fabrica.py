@@ -1,68 +1,48 @@
-"""
-----Fábrica de Objetos Responsabilidad----
-
-Recibir datos crudos, validar todas las invariantes del diccionario de datos y retornar objetos correctamente construidos.
-
-Acciones
-- Convierte tipos (str → date, etc.)
-- Valida campos obligatorios
-- Verifica valores permitidos
-- Lanza excepción si hay violación
-- Retorna instancia del objeto puro
-"""
 from datetime import date
 from typing import Optional
-from dominio import (
-    Estudiante, Profesor, Asignatura, Curso,
-    PeriodoAcademico, Calificacion, Aula,
-    PlanDeEstudios, MaterialBibliografico,
-    Prestamo, ActividadExtracurricular
-)
+from dominio import Estudiante, Profesor, Asignatura, Curso
+
 
 class Fabrica:
-    """
-    Fábrica de objetos del dominio.
+   
+    # Convierte un objeto de dominio a una tupla usando sus atributos.
+    # Se usa para enviar datos a la capa de persistencia (por ejemplo, procedimientos almacenados).
+    @staticmethod
+    def a_tupla(obj) -> tuple:
+        return tuple(vars(obj).values())
+    
+    # Convierte un string en formato ISO (yyyy-mm-dd) a un objeto date.
+    # Lanza error si el valor está vacío o es inválido.
+    @staticmethod
+    def _parse_fecha(valor):
+        if not valor or valor.strip() == "":
+            raise ValueError("Fecha obligatoria")
+        return date.fromisoformat(valor)
+    
+    # Método principal de la fábrica.
+    # Determina qué tipo de objeto crear según las claves del diccionario.
+    @staticmethod
+    def crear(datos: dict):
 
-    Su responsabilidad es analizar el diccionario recibido y crear la
-    instancia de la clase correspondiente del modelo de dominio.
+        # Selección del tipo de entidad según presencia de claves
+        if 'numero_matricula'  in datos: return Fabrica._crear_estudiante(datos)
+        if 'codigo_empleado'   in datos: return Fabrica._crear_profesor(datos)
+        if 'codigo_asignatura' in datos: return Fabrica._crear_asignatura(datos)
+        if 'codigo_curso'      in datos: return Fabrica._crear_curso(datos)
+        if 'codigo_periodo'    in datos: return Fabrica._crear_periodo(datos)
+        if 'id_calificacion'   in datos: return Fabrica._crear_calificacion(datos)
+        if 'id_aula'           in datos: return Fabrica._crear_aula(datos)
+        if 'codigo_plan'       in datos: return Fabrica._crear_plan(datos)
+        if 'codigo_material'   in datos: return Fabrica._crear_material(datos)
+        if 'codigo_prestamo'   in datos: return Fabrica._crear_prestamo(datos)
+        if 'codigo_actividad'  in datos: return Fabrica._crear_actividad(datos)
 
-    Cada tipo de entidad se identifica por la presencia de un campo
-    clave dentro del diccionario.
-    """
-
-    def crear(self, datos: dict):
-        """
-        Determina qué tipo de entidad debe crearse y delega
-        la construcción al método específico.
-
-        Args:
-            datos (dict): Diccionario con los datos de la entidad.
-
-        Returns:
-            object: Instancia de la clase de dominio correspondiente.
-
-        Raises:
-            ValueError: Si el diccionario no corresponde a ninguna
-            entidad conocida del sistema.
-        """
-
-        if 'numero_matricula'  in datos: return self._crear_estudiante(datos)
-        if 'codigo_empleado'   in datos: return self._crear_profesor(datos)
-        if 'codigo_asignatura' in datos: return self._crear_asignatura(datos)
-        if 'codigo_curso'      in datos: return self._crear_curso(datos)
-        if 'codigo_periodo'    in datos: return self._crear_periodo(datos)
-        if 'id_calificacion'   in datos: return self._crear_calificacion(datos)
-        if 'id_aula'           in datos: return self._crear_aula(datos)
-        if 'codigo_plan'       in datos: return self._crear_plan(datos)
-        if 'codigo_material'   in datos: return self._crear_material(datos)
-        if 'codigo_prestamo'   in datos: return self._crear_prestamo(datos)
-        if 'codigo_actividad'  in datos: return self._crear_actividad(datos)
-
+        # Si no coincide con ninguna entidad conocida
         raise ValueError("El diccionario no corresponde a ninguna entidad conocida.")
 
-
-    def _crear_estudiante(self, datos: dict) -> Estudiante:
-        """
+#---------------------------------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------------------------------------
+    """
         Crea un objeto Estudiante a partir de un diccionario.
 
         Convierte campos necesarios como fechas y asigna valores
@@ -73,103 +53,81 @@ class Fabrica:
 
         Returns:
             Estudiante: Instancia del modelo de dominio Estudiante.
-        """
+    """
+    @staticmethod
+    def _crear_estudiante(datos: dict) -> Estudiante:
         return Estudiante(
-            numero_matricula    = datos['numero_matricula'],
-            nombres             = datos['nombres'],
-            apellidos           = datos['apellidos'],
-            documento_identidad = datos['documento_identidad'],
-            fecha_nacimiento    = date.fromisoformat(datos['fecha_nacimiento']),
-            direccion           = datos['direccion'],
-            correo_electronico  = datos['correo_electronico'],
-            nombre_tutor        = datos['nombre_tutor'],
-            contacto_emergencia = datos['contacto_emergencia'],
-            fecha_ingreso       = date.fromisoformat(datos['fecha_ingreso']),
-            telefono            = datos.get('telefono'),
-            fotografia          = datos.get('fotografia'),
+            numero_matricula    = datos['numero_matricula'],   # ID principal
+            nombres             = datos['nombres'],            # Nombres del estudiante
+            apellidos           = datos['apellidos'],          # Apellidos
+            documento_identidad = datos['documento_identidad'],# Documento
+            fecha_nacimiento    = Fabrica._parse_fecha(datos.get('fecha_nacimiento')), # Conversión a date
+            direccion           = datos['direccion'],          # Dirección
+            correo_electronico  = datos['correo_electronico'], # Email
+            nombre_tutor        = datos['nombre_tutor'],       # Tutor legal
+            contacto_emergencia = datos['contacto_emergencia'],# Contacto de emergencia
+            fecha_ingreso       = Fabrica._parse_fecha(datos.get('fecha_ingreso')), # Fecha de ingreso
+            telefono            = datos.get('telefono'),       # Campo opcional
+            fotografia          = datos.get('fotografia'),     # Binario opcional
         )
 
-
-    def _crear_profesor(self, datos: dict) -> Profesor:
-        """
-        Construye un objeto Profesor utilizando la información
-        proporcionada en el diccionario.
-
-        Args:
-            datos (dict): Datos del profesor.
-
-        Returns:
-            Profesor: Instancia del modelo Profesor.
-        """
+    # Crea un objeto Profesor
+    @staticmethod
+    def _crear_profesor(datos: dict) -> Profesor:
         return Profesor(
-            codigo_empleado      = datos['codigo_empleado'],
+            codigo_empleado      = datos['codigo_empleado'],   # ID del profesor
             nombres              = datos['nombres'],
             apellidos            = datos['apellidos'],
             documento_identidad  = datos['documento_identidad'],
-            fecha_nacimiento     = date.fromisoformat(datos['fecha_nacimiento']),
+            fecha_nacimiento     = Fabrica._parse_fecha(datos.get('fecha_nacimiento')),
             direccion            = datos['direccion'],
             correo_institucional = datos['correo_institucional'],
             nivel_formacion      = datos['nivel_formacion'],
             especialidad         = datos['especialidad'],
-            anios_experiencia    = int(datos['anios_experiencia']),
-            fecha_contratacion   = date.fromisoformat(datos['fecha_contratacion']),
+            anios_experiencia    = int(datos['anios_experiencia']), # Conversión a entero
+            fecha_contratacion   = date.fromisoformat(datos['fecha_contratacion']), # Conversión directa
             tipo_contrato        = datos['tipo_contrato'],
             departamento         = datos['departamento'],
             telefono             = datos.get('telefono'),
         )
 
-
-    def _crear_asignatura(self, datos: dict) -> Asignatura:
-        """
-        Genera una instancia de Asignatura a partir del diccionario
-        recibido.
-
-        Args:
-            datos (dict): Información de la asignatura.
-
-        Returns:
-            Asignatura: Objeto del dominio asignatura.
-        """
+    # Crea un objeto Asignatura
+    @staticmethod
+    def _crear_asignatura(datos: dict) -> Asignatura:
         return Asignatura(
-            codigo_asignatura     = datos['codigo_asignatura'],
+            codigo_asignatura     = datos['codigo_asignatura'],  # ID
             nombre                = datos['nombre'],
             area_conocimiento     = datos['area_conocimiento'],
-            horas_teoricas        = int(datos['horas_teoricas']),
+            horas_teoricas        = int(datos['horas_teoricas']),  # Conversión a entero
             horas_practicas       = int(datos['horas_practicas']),
             creditos_academicos   = int(datos['creditos_academicos']),
             objetivos_generales   = datos['objetivos_generales'],
             objetivos_especificos = datos['objetivos_especificos'],
-            requisitos_previos    = datos.get('requisitos_previos'),
+            requisitos_previos    = datos.get('requisitos_previos'), # Opcional
             bibliografia          = datos.get('bibliografia'),
         )
 
-
-    def _crear_curso(self, datos: dict) -> Curso:
-        """
-        Crea un objeto Curso que representa la oferta de una asignatura
-        en un periodo académico específico.
-
-        Args:
-            datos (dict): Datos del curso.
-
-        Returns:
-            Curso: Instancia del curso académico.
-        """
+    # Crea un objeto Curso
+    @staticmethod
+    def _crear_curso(datos: dict) -> Curso:
         return Curso(
-            codigo_curso            = datos['codigo_curso'],
+            codigo_curso            = datos['codigo_curso'],   # ID
             periodo_academico       = datos['periodo_academico'],
             asignatura              = datos['asignatura'],
             profesor_asignado       = datos['profesor_asignado'],
             aula                    = datos['aula'],
             horario_dias            = datos['horario_dias'],
             horario_horas           = datos['horario_horas'],
-            cupo_maximo             = int(datos['cupo_maximo']),
+            cupo_maximo             = int(datos['cupo_maximo']), # Conversión a entero
             metodologia_evaluacion  = datos['metodologia_evaluacion'],
-            lista_estudiantes       = datos.get('lista_estudiantes', []),
+            lista_estudiantes       = datos.get('lista_estudiantes', []), # Lista por defecto
         )
+    
+#-------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------
 
-
-    def _crear_periodo(self, datos: dict) -> PeriodoAcademico:
+    @staticmethod
+    def _crear_periodo(datos: dict) -> PeriodoAcademico:
         """
         Construye un objeto PeriodoAcademico.
 
@@ -188,8 +146,8 @@ class Fabrica:
             calendario_actividades = datos.get('calendario_actividades'),
         )
 
-
-    def _crear_calificacion(self, datos: dict) -> Calificacion:
+    @staticmethod
+    def _crear_calificacion(datos: dict) -> Calificacion:
         """
         Genera una instancia de Calificacion que representa
         una evaluación realizada a un estudiante.
@@ -210,8 +168,8 @@ class Fabrica:
             observaciones   = datos.get('observaciones'),
         )
 
-
-    def _crear_aula(self, datos: dict) -> Aula:
+    @staticmethod
+    def _crear_aula(datos: dict) -> Aula:
         """
         Construye un objeto Aula que representa un espacio físico
         dentro de la institución.
@@ -232,8 +190,8 @@ class Fabrica:
             equipamiento  = datos.get('equipamiento'),
         )
 
-
-    def _crear_plan(self, datos: dict) -> PlanDeEstudios:
+    @staticmethod
+    def _crear_plan(datos: dict) -> PlanDeEstudios:
         """
         Crea un objeto PlanDeEstudios que describe la estructura
         curricular de una carrera.
@@ -253,8 +211,8 @@ class Fabrica:
             requisitos_graduacion  = datos['requisitos_graduacion'],
         )
 
-
-    def _crear_material(self, datos: dict) -> MaterialBibliografico:
+    @staticmethod
+    def _crear_material(datos: dict) -> MaterialBibliografico:
         """
         Genera una instancia de MaterialBibliografico que representa
         un recurso disponible en biblioteca.
@@ -279,8 +237,8 @@ class Fabrica:
             cantidad_ejemplares  = int(datos['cantidad_ejemplares']) if datos.get('cantidad_ejemplares') else None,
         )
 
-
-    def _crear_prestamo(self, datos: dict) -> Prestamo:
+    @staticmethod
+    def _crear_prestamo(datos: dict) -> Prestamo:
         """
         Crea un objeto Prestamo que representa el registro de
         préstamo de un material bibliográfico.
@@ -301,8 +259,8 @@ class Fabrica:
             multa_aplicada        = float(datos['multa_aplicada']) if datos.get('multa_aplicada') else None,
         )
 
-
-    def _crear_actividad(self, datos: dict) -> ActividadExtracurricular:
+    @staticmethod
+    def _crear_actividad(datos: dict) -> ActividadExtracurricular:
         """
         Genera una instancia de ActividadExtracurricular que representa
         una actividad institucional fuera del currículo académico.

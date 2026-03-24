@@ -1,387 +1,299 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox, filedialog
+from tkcalendar import DateEntry
+from aplicacion import Controlador
+import traceback
 
-"""
-Interfaz gráfica del Sistema de Gestión Académica.
-
-Este módulo construye la interfaz usando Tkinter. La aplicación organiza
-los formularios por entidad académica mediante un Notebook (pestañas).
-Cada pestaña contiene un formulario que permite capturar la información
-necesaria para registrar, actualizar o eliminar registros del sistema.
-
-La construcción de formularios se realiza mediante funciones genéricas
-para evitar repetición de código.
-"""
-
-import tkinter as tk
-from tkinter import ttk
-
-
+# Crear ventana principal
 root = tk.Tk()
-root.geometry('900x700')
-root.title("Sistema de Gestión Académica")
+root.geometry('900x700')  # Tamaño de la ventana
+root.title("Sistema de Gestión Académica")  # Título
 
-"""
-Notebook funciona como contenedor de pestañas.
-Cada pestaña representa una entidad del sistema.
-"""
+# Crear contenedor de pestañas
 notebook = ttk.Notebook(root)
 
-"""
-Cada Frame representa el contenedor visual donde se
-dibujará el formulario correspondiente a la entidad.
-"""
+# Crear pestañas
+tab_estudiante = ttk.Frame(notebook, name='estudiante')
+tab_profesor   = ttk.Frame(notebook, name='profesor')
+tab_asignatura = ttk.Frame(notebook, name='asignatura')
+tab_curso      = ttk.Frame(notebook, name='curso')
 
-tab_estudiante   = ttk.Frame(notebook)
-tab_profesor     = ttk.Frame(notebook)
-tab_asignatura   = ttk.Frame(notebook)
-tab_curso        = ttk.Frame(notebook)
-tab_periodo      = ttk.Frame(notebook)
-tab_calificacion = ttk.Frame(notebook)
-tab_aula         = ttk.Frame(notebook)
-tab_plan         = ttk.Frame(notebook)
-tab_material     = ttk.Frame(notebook)
-tab_prestamo     = ttk.Frame(notebook)
-tab_actividad    = ttk.Frame(notebook)
-
-
-"""
-Registro de cada pestaña dentro del Notebook.
-El parámetro text define el nombre visible en la interfaz.
-"""
-
-notebook.add(tab_estudiante,   text="Estudiante")
-notebook.add(tab_profesor,     text="Profesor")
-notebook.add(tab_asignatura,   text="Asignatura")
-notebook.add(tab_curso,        text="Curso")
-notebook.add(tab_periodo,      text="Periodo")
-notebook.add(tab_calificacion, text="Calificación")
-notebook.add(tab_aula,         text="Aula")
-notebook.add(tab_plan,         text="Plan de Estudios")
-notebook.add(tab_material,     text="Material")
-notebook.add(tab_prestamo,     text="Préstamo")
-notebook.add(tab_actividad,    text="Actividad")
-
+# Agregar pestañas al notebook
+notebook.add(tab_estudiante, text="Estudiante")
+notebook.add(tab_profesor,   text="Profesor")
+notebook.add(tab_asignatura, text="Asignatura")
+notebook.add(tab_curso,      text="Curso")
 notebook.pack(expand=True, fill="both")
 
+# Instancia del controlador (lógica de negocio)
+controlador = Controlador()
 
 
+# Función para construir formularios dinámicamente
 def construir_formulario(tab, titulo, color, campos):
-    """
-    Construye dinámicamente un formulario dentro de una pestaña.
 
-    Args:
-        tab (Frame):
-            Contenedor donde se dibujará el formulario.
+    # Frame superior que contiene todo
+    frame_superior = tk.Frame(tab)
+    frame_superior.pack(fill="both", expand=True)
 
-        titulo (str):
-            Texto que se mostrará como encabezado del formulario.
-
-        color (str):
-            Color del título para diferenciar visualmente
-            cada tipo de formulario.
-
-        campos (list[tuple]):
-            Lista de campos del formulario.
-            Cada elemento contiene:
-                (nombre_campo, obligatorio)
-
-            obligatorio (bool):
-                True  -> campo requerido
-                False -> campo opcional
-    """
-
+    # Título del formulario
     tk.Label(
-        tab,
+        frame_superior,
         text=titulo,
         font=("Arial", 14, "bold"),
         fg=color
     ).pack(pady=10)
 
-    """
-    Canvas + Scrollbar permiten que el formulario
-    sea desplazable cuando tiene muchos campos.
-    """
-
-    canvas = tk.Canvas(tab)
-    scroll = ttk.Scrollbar(tab, orient="vertical", command=canvas.yview)
+    # Canvas + Scroll (para formularios largos)
+    canvas = tk.Canvas(frame_superior)
+    scroll = ttk.Scrollbar(frame_superior, orient="vertical", command=canvas.yview)
     frame_inner = ttk.Frame(canvas)
 
+    # Ajustar scroll dinámicamente
     frame_inner.bind(
         "<Configure>",
         lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
     )
 
+    # Insertar frame dentro del canvas
     canvas.create_window((0, 0), window=frame_inner, anchor="nw")
     canvas.configure(yscrollcommand=scroll.set)
-
     canvas.pack(side="left", fill="both", expand=True)
     scroll.pack(side="right", fill="y")
 
-    """
-    Contenedor donde se colocarán los campos
-    del formulario usando grid.
-    """
-
+    # Frame del formulario
     form = tk.Frame(frame_inner)
     form.pack(pady=10, padx=50, anchor="w")
 
-    """
-    Generación dinámica de etiquetas y campos de entrada.
-    """
+    # Diccionario para guardar los widgets
+    entries = {}
 
+    # Crear campos dinámicamente
     for i, (etiqueta, obligatorio) in enumerate(campos):
+        sufijo = " " if obligatorio else " (opcional)"
 
-        sufijo = " *" if obligatorio else " (opcional)"
-
+        # Etiqueta del campo
         tk.Label(
             form,
             text=etiqueta + sufijo + ":",
             font=("Arial", 12)
         ).grid(row=i, column=0, sticky="w", padx=(0, 10), pady=8)
 
-        tk.Entry(
-            form,
-            width=30,
-            font=("Arial", 12),
-            relief="solid",
-            bd=1
-        ).grid(row=i, column=1, sticky="w", pady=8)
+        # ── Campo tipo fecha ──
+        if "fecha" in etiqueta.lower():
+            widget = DateEntry(
+                form,
+                width=28,
+                font=("Arial", 12),
+                date_pattern="yyyy-mm-dd",
+                relief="solid",
+                bd=1
+            )
 
-    """
-    Agrega los botones de acción del formulario.
-    """
-    construir_botones(tab)
+        # ── Campo para cargar fotografía ──
+        elif etiqueta.lower() == "fotografia":
+            foto_frame = tk.Frame(form)
+
+            # Label que muestra nombre del archivo
+            foto_label = tk.Label(
+                foto_frame,
+                text="Sin archivo",
+                font=("Arial", 10),
+                fg="gray"
+            )
+            foto_label.pack(side=tk.LEFT, padx=(5, 0))
+
+            # Variable para guardar bytes de la imagen
+            foto_var = {"valor": None}
+
+            # Función para seleccionar imagen
+            def seleccionar_foto(label=foto_label, var=foto_var):
+                ruta = filedialog.askopenfilename(
+                    title="Seleccionar fotografía",
+                    filetypes=[("Imágenes", "*.jpg *.jpeg *.png *.bmp")]
+                )
+                if ruta:
+                    with open(ruta, "rb") as f:
+                        var["valor"] = f.read()  # Guardar imagen en bytes
+                    label.config(text=ruta.split("/")[-1], fg="black")
+
+            # Botón para abrir explorador
+            tk.Button(
+                foto_frame,
+                text="📁 Seleccionar",
+                font=("Arial", 10),
+                command=seleccionar_foto
+            ).pack(side=tk.LEFT)
+
+            foto_frame.grid(row=i, column=1, sticky="w", pady=8)
+
+            # Clase para simular .get()
+            class FotoWidget:
+                def __init__(self, var): self.var = var
+                def get(self): return self.var["valor"]
+
+            widget = FotoWidget(foto_var)
+            entries[etiqueta] = widget
+            continue  # Saltar grid inferior
+
+        # ── Campo de texto normal ──
+        else:
+            widget = tk.Entry(
+                form,
+                width=30,
+                font=("Arial", 12),
+                relief="solid",
+                bd=1
+            )
+
+        # Posicionar widget
+        widget.grid(row=i, column=1, sticky="w", pady=8)
+        entries[etiqueta] = widget
+
+    # Área para mostrar resultados
+    frame_resultado = tk.Frame(tab, bd=1, relief="groove")
+    frame_resultado.pack(fill="x", padx=10, pady=(0, 10))
+
+    tk.Label(
+        frame_resultado,
+        text="Resultados de consulta",
+        font=("Arial", 11, "bold"),
+        anchor="w"
+    ).pack(fill="x", padx=8, pady=(6, 2))
+
+    # Scroll del área de resultados
+    resultado_scroll = ttk.Scrollbar(frame_resultado, orient="vertical")
+
+    # Caja de texto
+    area_resultado = tk.Text(
+        frame_resultado,
+        height=8,
+        font=("Courier", 11),
+        relief="flat",
+        bg="#f5f5f5",
+        fg="#222222",
+        state="disabled",
+        wrap="word",
+        yscrollcommand=resultado_scroll.set
+    )
+
+    resultado_scroll.config(command=area_resultado.yview)
+    resultado_scroll.pack(side="right", fill="y")
+    area_resultado.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+
+    # Crear botones CRUD
+    construir_botones(tab, entries, area_resultado)
 
 
+# Escribir resultados en el área de texto
+def escribir_resultado(area, texto):
+    area.config(state="normal")
+    area.delete("1.0", tk.END)
+    area.insert(tk.END, texto)
+    area.config(state="disabled")
 
 
-def construir_botones(tab):
-    """
-    Crea los botones de operación del formulario.
+# Ejecutar acción con manejo de errores
+def ejecutar(accion, area_resultado, mensaje_exito):
+    try:
+        print(">>> ejecutando...")
+        resultado = accion()
+        print(">>> OK")
+        messagebox.showinfo("✔ Éxito", mensaje_exito)
+        if resultado:
+            escribir_resultado(area_resultado, resultado)
+    except Exception as e:
+        print(">>> ERROR REAL:", e)
+        traceback.print_exc()
+        messagebox.showerror("❌ Error", str(e))
 
-    Operaciones disponibles:
-        - Guardar      : crear registro
-        - Actualizar   : modificar registro
-        - Eliminar     : borrar registro
-        - Limpiar      : vaciar campos del formulario
-    """
+
+# Crear botones CRUD
+def construir_botones(tab, entries, area_resultado):
+
+    nombre_entidad = tab.winfo_name()  # Nombre de la pestaña
 
     btn_frame = tk.Frame(tab)
     btn_frame.pack(pady=15)
 
+    # Botón Guardar
     tk.Button(
-        btn_frame,
-        text="Guardar",
-        font=("Arial", 12),
-        bg="#4CAF50",
-        fg="white",
-        width=10
-    ).pack(side=tk.TOP, padx=5)
+        btn_frame, text="Guardar",
+        font=("Arial", 12), bg="#4CAF50", fg="white", width=10,
+        command=lambda: ejecutar(
+            lambda: controlador.Guardar({k: v.get() for k, v in entries.items()}),
+            area_resultado,
+            "✔ Registro guardado correctamente.")
+    ).pack(side=tk.LEFT, padx=5)
 
+    # Botón Obtener
     tk.Button(
-        btn_frame,
-        text="Actualizar",
-        font=("Arial", 12),
-        bg="#2196F3",
-        fg="white",
-        width=10
-    ).pack(side=tk.TOP, padx=5)
+        btn_frame, text="Obtener",
+        font=("Arial", 12), bg="#FF9800", fg="white", width=10,
+        command=lambda: ejecutar(
+            lambda: controlador.Obtener(nombre_entidad),
+            area_resultado,
+            "✔ Consulta realizada correctamente.")
+    ).pack(side=tk.LEFT, padx=5)
 
+    # Botón Actualizar
     tk.Button(
-        btn_frame,
-        text="Eliminar",
-        font=("Arial", 12),
-        bg="#f44336",
-        fg="white",
-        width=10
-    ).pack(side=tk.TOP, padx=5)
+        btn_frame, text="Actualizar",
+        font=("Arial", 12), bg="#2196F3", fg="white", width=10,
+        command=lambda: ejecutar(
+            lambda: controlador.Actualizar({k: v.get() for k, v in entries.items()}),
+            area_resultado,
+            "✔ Registro actualizado correctamente.")
+    ).pack(side=tk.LEFT, padx=5)
 
+    # Botón Eliminar
     tk.Button(
-        btn_frame,
-        text="Limpiar",
-        font=("Arial", 12),
-        bg="#FF9800",
-        fg="white",
-        width=10
-    ).pack(side=tk.TOP, padx=5)
+        btn_frame, text="Eliminar",
+        font=("Arial", 12), bg="#f44336", fg="white", width=10,
+        command=lambda: ejecutar(
+            lambda: controlador.Eliminar(
+                {k: v.get() for k, v in entries.items()},
+                nombre_entidad
+            ),
+            area_resultado,
+            "✔ Registro eliminado correctamente.")
+    ).pack(side=tk.LEFT, padx=5)
 
 
+# ─────────────── CREACIÓN DE FORMULARIOS ───────────────
 
-
-"""
-Cada llamada a construir_formulario define
-la estructura de campos que tendrá cada entidad.
-"""
-
-# ESTUDIANTE
+# Formulario Estudiante
 construir_formulario(tab_estudiante, "FORMULARIO DE ESTUDIANTE", "blue", [
-    ("Número de Matrícula",    True),
-    ("Nombres",                True),
-    ("Apellidos",              True),
-    ("Documento de Identidad", True),
-    ("Fecha de Nacimiento",    True),
-    ("Dirección",              True),
-    ("Correo Electrónico",     True),
-    ("Nombre del Tutor",       True),
-    ("Contacto de Emergencia", True),
-    ("Fecha de Ingreso",       True),
-    ("Teléfono",               False),
-    ("Fotografía",             False),
+    ("numero_matricula", True), ("nombres", True), ("apellidos", True),
+    ("documento_identidad", True), ("fecha_nacimiento", True), ("direccion", True),
+    ("correo_electronico", True), ("nombre_tutor", True), ("contacto_emergencia", True),
+    ("fecha_ingreso", True), ("telefono", False), ("fotografia", False)
 ])
 
-# ══════════════════════════════════════════════════════════════════
-# 2. PROFESOR
-# ══════════════════════════════════════════════════════════════════
+# Formulario Profesor
 construir_formulario(tab_profesor, "FORMULARIO DE PROFESOR", "darkgreen", [
-    ("Código de Empleado",     True),
-    ("Nombres",                True),
-    ("Apellidos",              True),
-    ("Documento de Identidad", True),
-    ("Fecha de Nacimiento",    True),
-    ("Dirección",              True),
-    ("Correo Institucional",   True),
-    ("Nivel de Formación",     True),
-    ("Especialidad",           True),
-    ("Años de Experiencia",    True),
-    ("Fecha de Contratación",  True),
-    ("Tipo de Contrato",       True),
-    ("Departamento",           True),
-    ("Teléfono",               False),
+    ("codigo_empleado", True), ("nombres", True), ("apellidos", True),
+    ("documento_identidad", True), ("fecha_nacimiento", True), ("direccion", True),
+    ("correo_institucional", True), ("nivel_formacion", True), ("especialidad", True),
+    ("anios_experiencia", True), ("fecha_contratacion", True), ("tipo_contrato", True),
+    ("departamento", True), ("telefono", False),
 ])
 
-# ══════════════════════════════════════════════════════════════════
-# 3. ASIGNATURA
-# ══════════════════════════════════════════════════════════════════
+# Formulario Asignatura
 construir_formulario(tab_asignatura, "FORMULARIO DE ASIGNATURA", "purple", [
-    ("Código de Asignatura",  True),
-    ("Nombre",                True),
-    ("Área de Conocimiento",  True),
-    ("Horas Teóricas",        True),
-    ("Horas Prácticas",       True),
-    ("Créditos Académicos",   True),
-    ("Objetivos Generales",   True),
-    ("Objetivos Específicos", True),
-    ("Requisitos Previos",    False),
-    ("Bibliografía",          False),
+    ("codigo_asignatura", True), ("nombre", True), ("area_conocimiento", True),
+    ("horas_teoricas", True), ("horas_practicas", True), ("creditos_academicos", True),
+    ("objetivos_generales", True), ("objetivos_especificos", True),
+    ("requisitos_previos", False), ("bibliografia", False),
 ])
 
-# ══════════════════════════════════════════════════════════════════
-# 4. CURSO
-# ══════════════════════════════════════════════════════════════════
+# Formulario Curso
 construir_formulario(tab_curso, "FORMULARIO DE CURSO", "darkorange", [
-    ("Código de Curso",           True),
-    ("Periodo Académico",         True),
-    ("Asignatura",                True),
-    ("Profesor Asignado",         True),
-    ("Aula",                      True),
-    ("Horario Días",              True),
-    ("Horario Horas",             True),
-    ("Cupo Máximo",               True),
-    ("Metodología de Evaluación", True),
-    ("Lista de Estudiantes",      False),
+    ("codigo_curso", True), ("periodo_academico", True), ("asignatura", True),
+    ("profesor_asignado", True), ("aula", True), ("horario_dias", True),
+    ("horario_horas", True), ("cupo_maximo", True), ("metodologia_evaluacion", True),
+    ("lista_estudiantes", False),
 ])
 
-# ══════════════════════════════════════════════════════════════════
-# 5. PERIODO ACADÉMICO
-# ══════════════════════════════════════════════════════════════════
-construir_formulario(tab_periodo, "FORMULARIO DE PERIODO ACADÉMICO", "teal", [
-    ("Código de Periodo",         True),
-    ("Descripción",               True),
-    ("Fecha de Inicio",           True),
-    ("Fecha de Finalización",     True),
-    ("Estado Actual",             True),
-    ("Calendario de Actividades", False),
-])
-
-# ══════════════════════════════════════════════════════════════════
-# 6. CALIFICACIÓN
-# ══════════════════════════════════════════════════════════════════
-construir_formulario(tab_calificacion, "FORMULARIO DE CALIFICACIÓN", "crimson", [
-    ("Estudiante",         True),
-    ("Curso",              True),
-    ("Tipo de Evaluación", True),
-    ("Fecha",              True),
-    ("Valor Numérico",     True),
-    ("Porcentaje",         True),
-    ("Observaciones",      False),
-])
-
-# ══════════════════════════════════════════════════════════════════
-# 7. AULA
-# ══════════════════════════════════════════════════════════════════
-construir_formulario(tab_aula, "FORMULARIO DE AULA", "steelblue", [
-    ("ID Aula",       True),
-    ("Edificio",      True),
-    ("Piso",          True),
-    ("Capacidad",     True),
-    ("Tipo",          True),
-    ("Estado Actual", True),
-    ("Equipamiento",  False),
-])
-
-# ══════════════════════════════════════════════════════════════════
-# 8. PLAN DE ESTUDIOS
-# ══════════════════════════════════════════════════════════════════
-construir_formulario(tab_plan, "FORMULARIO DE PLAN DE ESTUDIOS", "indigo", [
-    ("Código de Plan",           True),
-    ("Carrera",                  True),
-    ("Fecha de Aprobación",      True),
-    ("Asignaturas por Nivel",    True),
-    ("Créditos Totales",         True),
-    ("Requisitos de Graduación", True),
-])
-
-# ══════════════════════════════════════════════════════════════════
-# 9. MATERIAL BIBLIOGRÁFICO
-# ══════════════════════════════════════════════════════════════════
-construir_formulario(tab_material, "FORMULARIO DE MATERIAL BIBLIOGRÁFICO", "saddlebrown", [
-    ("Código de Material",  True),
-    ("Título",              True),
-    ("Autores",             True),
-    ("Categoría Temática",  True),
-    ("Formato",             True),
-    ("Editorial",           False),
-    ("Año de Publicación",  False),
-    ("Edición",             False),
-    ("ISBN",                False),
-    ("Ubicación Física",    False),
-    ("Cantidad Ejemplares", False),
-])
-
-# ══════════════════════════════════════════════════════════════════
-# 10. PRÉSTAMO
-# ══════════════════════════════════════════════════════════════════
-construir_formulario(tab_prestamo, "FORMULARIO DE PRÉSTAMO", "darkred", [
-    ("Código de Préstamo",     True),
-    ("Fecha de Préstamo",      True),
-    ("Fecha Devolución Prog.", True),
-    ("Material Prestado",      True),
-    ("Solicitante",            True),
-    ("Estado",                 True),
-    ("Multa Aplicada",         False),
-])
-
-# ══════════════════════════════════════════════════════════════════
-# 11. ACTIVIDAD EXTRACURRICULAR
-# ══════════════════════════════════════════════════════════════════
-construir_formulario(tab_actividad, "FORMULARIO DE ACTIVIDAD EXTRACURRICULAR", "darkslategray", [
-    ("Código de Actividad",  True),
-    ("Nombre",               True),
-    ("Tipo",                 True),
-    ("Profesor Responsable", True),
-    ("Horario",              True),
-    ("Lugar",                True),
-    ("Cupo",                 True),
-    ("Descripción",          False),
-    ("Lista Participantes",  False),
-])
-
-
-"""
-Inicia el loop principal de la interfaz gráfica.
-La aplicación permanece activa hasta que el usuario
-cierre la ventana.
-"""
-
+# Ejecutar aplicación
 root.mainloop()

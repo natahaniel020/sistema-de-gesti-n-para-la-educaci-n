@@ -1,110 +1,99 @@
-"""
---- MÓDULO 2 Controlador --- Coordinador Central
-- Responsabilidad
-Coordinar el flujo completo entre todos los módulos. No crea objetos ni accede a datos directamente.
-
-Flujo por operación
-- Recibe dict del Módulo 4
-- Llama Módulo 3 → obtiene objeto puro
-- Llama Serializador → obtiene dict
-- Almacena en estructura de datos
-- Retorna confirmación al Módulo 4
-"""
-
-from dominio import Serializador
 from fabrica import Fabrica
-
+from persistencia import EstudianteRepositorio, ProfesorRepositorio, AsignaturaRepositorio, CursoRepositorio
+from dominio import Estudiante, Profesor, Asignatura, Curso
 
 class Controlador:
-    """
-    Controlador central del sistema.
 
-    Su responsabilidad es recibir datos de entrada, crear el objeto de dominio
-    correspondiente mediante la fábrica, serializarlo a diccionario y almacenarlo
-    en la estructura de datos interna según el tipo de entidad.
-    """
-
-    # Almacén en memoria organizado por tipo de entidad
-    datos = {
-        'estudiantes'   : {},
-        'profesores'    : {},
-        'asignaturas'   : {},
-        'cursos'        : {},
-        'periodos'      : {},
-        'calificaciones': {},
-        'aulas'         : {},
-        'planes'        : {},
-        'materiales'    : {},
-        'prestamos'     : {},
-        'actividades'   : {},
+    # Diccionario que relaciona cada entidad del dominio con su repositorio correspondiente
+    REPOSITORIOS = {
+        Estudiante : EstudianteRepositorio,
+        Profesor   : ProfesorRepositorio,
+        Asignatura : AsignaturaRepositorio,
+        Curso      : CursoRepositorio,
     }
 
-    def registrar(self, datos: dict) -> dict:
-        """
-        Registra una nueva entidad en el sistema.
+    # Método interno para obtener el repositorio correcto según la entidad
+    def _obtener_repositorio(self, entidad):
+        
+        # Si la entidad viene como string (desde la interfaz)
+        if isinstance(entidad, str):
+            # Se convierte el nombre en la clase correspondiente
+            clave = {"estudiante": Estudiante, "profesor": Profesor,
+                        "asignatura": Asignatura, "curso": Curso}.get(entidad.lower())
+        else:
+            # Si ya es un objeto, se obtiene su tipo (clase)
+            clave = type(entidad)
 
-        Proceso:
-        1. Utiliza la fábrica para crear el objeto de dominio a partir del diccionario recibido.
-        2. Convierte el objeto a un diccionario mediante el serializador.
-        3. Almacena el diccionario en la estructura interna correspondiente.
+        # Buscar el repositorio correspondiente en el diccionario
+        clase = self.REPOSITORIOS.get(clave)
 
-        Args:
-            datos (dict): Diccionario con los datos necesarios para crear la entidad.
-
-        Returns:
-            dict: Diccionario serializado del objeto creado.
-        """
-
-        objeto = Fabrica.crear(datos)
-        diccionario = Serializador.convertir(objeto)
-        self._almacenar(diccionario)
-        return diccionario
-
-
-    def _almacenar(self, diccionario: dict):
-        """
-        Guarda el diccionario de una entidad en el almacén correspondiente.
-
-        Determina la tabla y la clave mediante el método `_resolver_destino`
-        y luego almacena el registro dentro del diccionario global `datos`.
-
-        Args:
-            diccionario (dict): Representación serializada del objeto.
-        """
-
-        tabla, clave = self._resolver_destino(diccionario)
-        Controlador.datos[tabla][clave] = diccionario
+        # Validación: si no existe repositorio para esa entidad
+        if not clase:
+            raise ValueError(f"Entidad desconocida: {entidad}")
+        
+        # Retorna una instancia del repositorio
+        return clase()
 
 
-    def _resolver_destino(self, diccionario: dict) -> tuple[str, str]:
-        """
-        Determina en qué colección del sistema debe almacenarse el diccionario
-        y cuál será su clave primaria.
+    # Método para guardar un registro
+    def Guardar(self, datos: dict):
+        # Crear objeto del dominio a partir de los datos
+        obj_dominio = Fabrica.crear(datos)
 
-        La decisión se toma analizando qué identificador contiene el diccionario.
+        # Convertir objeto a tupla (formato para persistencia)
+        tupla = Fabrica.a_tupla(obj_dominio)
 
-        Args:
-            diccionario (dict): Diccionario de la entidad serializada.
+        # Insertar en el repositorio correspondiente
+        self._obtener_repositorio(obj_dominio).insertar(tupla)
 
-        Returns:
-            tuple[str, str]:
-                - nombre de la tabla donde se almacenará
-                - clave única del registro
 
-        Raises:
-            ValueError: Si el diccionario no corresponde a ninguna entidad conocida.
-        """
+    # Método para obtener todos los registros de una entidad
+    def Obtener(self, nombre_entidad: str):
+        # Obtener repositorio según el nombre
+        repo = self._obtener_repositorio(nombre_entidad)
 
-        if 'numero_matricula'  in diccionario: return 'estudiantes',    diccionario['numero_matricula']
-        if 'codigo_empleado'   in diccionario: return 'profesores',     diccionario['codigo_empleado']
-        if 'codigo_asignatura' in diccionario: return 'asignaturas',    diccionario['codigo_asignatura']
-        if 'codigo_curso'      in diccionario: return 'cursos',         diccionario['codigo_curso']
-        if 'codigo_periodo'    in diccionario: return 'periodos',       diccionario['codigo_periodo']
-        if 'id_calificacion'   in diccionario: return 'calificaciones', diccionario['id_calificacion']
-        if 'id_aula'           in diccionario: return 'aulas',          diccionario['id_aula']
-        if 'codigo_plan'       in diccionario: return 'planes',         diccionario['codigo_plan']
-        if 'codigo_material'   in diccionario: return 'materiales',     diccionario['codigo_material']
-        if 'codigo_prestamo'   in diccionario: return 'prestamos',      diccionario['codigo_prestamo']
-        if 'codigo_actividad'  in diccionario: return 'actividades',    diccionario['codigo_actividad']
+        # Obtener todos los registros
+        resultados = repo.obtener()
 
-        raise ValueError("El diccionario no corresponde a ninguna entidad conocida.")
+        # Si no hay datos
+        if not resultados:
+            return "Sin registros encontrados."
+        
+        # Convertir resultados a string para mostrarlos
+        return "\n".join(str(fila) for fila in resultados)
+
+
+    # Método para actualizar un registro
+    def Actualizar(self, datos: dict):
+        # Crear objeto del dominio
+        obj_dominio = Fabrica.crear(datos)
+
+        # Convertir a tupla
+        tupla = Fabrica.a_tupla(obj_dominio)
+
+        # Ejecutar actualización en el repositorio correspondiente
+        self._obtener_repositorio(obj_dominio).actualizar(tupla)
+
+
+    # Método para eliminar un registro
+    def Eliminar(self, datos: dict, nombre_entidad: str):
+        # Diccionario que define el campo ID de cada entidad
+        claves = {
+            "estudiante": "numero_matricula",
+            "profesor"  : "codigo_empleado",
+            "asignatura": "codigo_asignatura",
+            "curso"     : "codigo_curso"
+        }
+
+        # Obtener el nombre del campo ID según la entidad
+        campo_id = claves.get(nombre_entidad.lower())
+
+        # Obtener el valor del ID desde los datos ingresados
+        id_valor = datos.get(campo_id)
+    
+        # Validación: si no se proporcionó el ID
+        if not id_valor:
+            raise ValueError(f"Debe ingresar el {campo_id} para eliminar.")
+    
+        # Llamar al método de eliminación del repositorio
+        self._obtener_repositorio(nombre_entidad).eliminar_por_id(id_valor)
