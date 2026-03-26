@@ -1,109 +1,207 @@
-📚 Sistema de Gestión Académica
-📌 Descripción
+# Sistema de Gestion Academica
 
-Este proyecto consiste en el desarrollo de un sistema de gestión académica implementado en Python, que permite administrar información relacionada con:
+Aplicacion de escritorio para la gestion de estudiantes, profesores, asignaturas y cursos. Permite registrar, consultar, actualizar y eliminar registros en una base de datos MySQL, y exportar reportes en formato Excel y PDF.
 
-Estudiantes
-Profesores
-Asignaturas
-Cursos
+---
 
-El sistema incluye una interfaz gráfica construida con Tkinter y está organizado siguiendo una arquitectura por capas, separando claramente la lógica de presentación, negocio y persistencia.
+## Requisitos del sistema
 
-🏗️ Arquitectura del Sistema
+- Python 3.10 o superior
+- MySQL Server 8.0 o superior
+- Windows 10 / 11 (el metodo `os.startfile` para abrir archivos exportados es exclusivo de Windows)
+- pip actualizado
 
-El sistema está diseñado bajo un enfoque modular dividido en las siguientes capas:
+---
 
-1. Interfaz (UI)
-Implementada con Tkinter
-Uso de pestañas (Notebook) para cada entidad
-Formularios dinámicos generados automáticamente
-Soporte para:
-Fechas (DateEntry)
-Carga de imágenes
-Campos opcionales y obligatorios
-Operaciones CRUD disponibles:
-Guardar
-Obtener
-Actualizar
-Eliminar
+## Instalacion
 
-2. Controlador
-Actúa como intermediario entre la interfaz y la lógica del sistema
-Recibe los datos del usuario
-Coordina la creación de objetos y su almacenamiento
-Selecciona dinámicamente el repositorio adecuado según la entidad
+### 1. Clonar o descargar el proyecto
 
-3. Fábrica (Factory Pattern)
-Responsable de crear objetos del dominio a partir de diccionarios
-Convierte tipos de datos (ej: fechas, enteros)
-Determina automáticamente el tipo de entidad
-Serializa objetos a tuplas para la persistencia
+```
+git clone https://github.com/tu-usuario/gestion-academica.git
+cd gestion-academica
+```
 
-4. Dominio
-Define las entidades principales del sistema:
+O descomprimir el archivo `.zip` descargado y abrir la carpeta del proyecto.
 
-Estudiante
-Profesor
-Asignatura
-Curso
+---
 
-Estas clases representan la estructura de los datos y contienen los atributos necesarios para cada entidad.
+### 2. Crear un entorno virtual (recomendado)
 
-5. Persistencia
-Implementada con MySQL y pymysql
-Uso de una clase base (BaseRepositorio) para manejar:
-Conexión
-Cursor
-Ejecución de procedimientos almacenados
-Repositorios específicos por entidad:
-EstudianteRepositorio
-ProfesorRepositorio
-AsignaturaRepositorio
-CursoRepositorio
+```
+python -m venv venv
+venv\Scripts\activate
+```
 
-Las operaciones se realizan mediante Stored Procedures (SP).
+---
 
-🔄 Flujo del Sistema
-El usuario ingresa datos en la interfaz gráfica
-El controlador recibe los datos
-La fábrica crea un objeto del dominio
-El objeto se convierte en tupla
-El repositorio ejecuta un procedimiento almacenado
-La base de datos procesa la operación
-El resultado se muestra en la interfaz
-🛠️ Tecnologías Utilizadas
-Python 3
-Tkinter
-tkcalendar
-MySQL
-pymysql
-📂 Estructura del Proyecto
-/proyecto
-│
-├── interfaz.py
-├── aplicacion.py (Controlador)
-├── fabrica.py
-├── dominio.py
-├── persistencia.py
-└── base de datos (MySQL)
-⚙️ Requisitos
-Python 3.x
-MySQL Server
+### 3. Instalar dependencias de Python
 
-Librerías:
+```
+pip install -r requirements.txt
+```
 
-pip install pymysql tkcalendar
-▶️ Ejecución
-Configurar la base de datos en MySQL
+Si no existe el archivo `requirements.txt`, instalar manualmente:
 
-Verificar credenciales en BaseRepositorio:
+```
+pip install pymysql
+pip install tkcalendar
+pip install tkinterdnd2
+pip install pillow
+pip install xlsxwriter
+pip install reportlab
+```
 
-host="localhost"
-user="root"
-password="****"
-database="gestion_academica"
+---
 
-Ejecutar el sistema:
+### 4. Configurar la base de datos
 
+Abrir MySQL Workbench o cualquier cliente MySQL y ejecutar el script de creacion de base de datos:
+
+```
+source sql/gestion_academica.sql
+```
+
+Verificar que la base de datos `gestion_academica` exista y que los procedimientos almacenados esten creados correctamente.
+
+---
+
+### 5. Configurar la conexion a la base de datos
+
+Abrir el archivo `persistencia.py` y ajustar los parametros de conexion en la propiedad `conexion` de la clase `BaseRepositorio`:
+
+```python
+self._conexion = pymysql.connect(
+    host     = "localhost",   # Direccion del servidor MySQL
+    user     = "root",        # Usuario de MySQL
+    password = "tu_password", # Contrasena de MySQL
+    database = "gestion_academica"
+)
+```
+
+---
+
+### 6. Configurar el favicon (opcional)
+
+Abrir `interfaz.py` y cambiar la ruta en la variable `FAVICON_RUTA` por la ruta a tu archivo de icono:
+
+```python
+FAVICON_RUTA = "img/icono.ico"   # .ico o .png
+```
+
+Si no se dispone de un icono, dejar la ruta como esta. La aplicacion continuara sin favicon.
+
+---
+
+## Estructura del proyecto
+
+```
+gestion-academica/
+├── interfaz.py        # Capa de presentacion (interfaz grafica Tkinter)
+├── aplicacion.py      # Controlador (logica de negocio y exportacion)
+├── dominio.py         # Clases de dominio (entidades del sistema)
+├── fabrica.py         # Fabrica de objetos a partir de diccionarios
+├── persistencia.py    # Repositorios y acceso a base de datos
+├── sql/
+│   └── gestion_academica.sql   # Script de creacion de BD y SPs
+├── img/
+│   └── icono.ico      # Icono de la aplicacion (opcional)
+├── reportes/          # Carpeta generada automaticamente para exportaciones
+└── README.md
+```
+
+---
+
+## Ejecucion
+
+Con el entorno virtual activo y la base de datos configurada, ejecutar:
+
+```
 python interfaz.py
+```
+
+---
+
+## Uso de la aplicacion
+
+### Navegacion
+
+La ventana principal tiene cuatro pestanas: **Estudiante**, **Profesor**, **Asignatura** y **Curso**. Cada pestana contiene un formulario independiente con los campos de la entidad correspondiente.
+
+---
+
+### Operaciones CRUD
+
+Cada formulario dispone de cuatro botones en la parte inferior:
+
+| Boton      | Descripcion                                                                 |
+|------------|-----------------------------------------------------------------------------|
+| Guardar    | Inserta un nuevo registro con los datos ingresados en el formulario.        |
+| Obtener    | Consulta todos los registros de la entidad y los muestra en el area inferior. |
+| Actualizar | Modifica el registro cuyo identificador coincide con el campo de ID.        |
+| Eliminar   | Elimina el registro correspondiente al ID ingresado.                        |
+
+Los campos marcados sin la palabra **(opcional)** son obligatorios. Dejarlos vacios puede producir un error al guardar o actualizar.
+
+---
+
+### Campo de fotografia
+
+El campo **fotografia** acepta imagenes en formato `.jpg`, `.jpeg`, `.png` y `.gif`.
+
+Existen dos formas de cargar una imagen:
+
+- **Arrastrar y soltar** el archivo directamente sobre el recuadro.
+- **Hacer clic** sobre el recuadro para abrir el explorador de archivos.
+
+El sistema muestra una miniatura de la imagen seleccionada dentro del recuadro. La ruta del archivo se almacena y se envia al controlador al momento de guardar o actualizar.
+
+---
+
+### Exportacion de reportes
+
+El panel lateral derecho de cada pestana contiene los controles de exportacion:
+
+| Boton          | Descripcion                                                        |
+|----------------|--------------------------------------------------------------------|
+| Exportar Excel | Genera un archivo `.xlsx` con todos los registros de la entidad.   |
+| Exportar PDF   | Genera un archivo `.pdf` con todos los registros en formato tabla. |
+
+Los archivos se guardan en la carpeta `reportes/` dentro del directorio del proyecto. El nombre del archivo corresponde al nombre de la entidad (por ejemplo, `estudiante.xlsx`).
+
+Los archivos generados aparecen listados en el panel. Hacer **doble clic** sobre un elemento de la lista abre el archivo con el programa predeterminado del sistema.
+
+---
+
+### Cambio de tema
+
+El boton **Oscuro / Claro** ubicado en la esquina superior derecha alterna entre el tema claro y el tema oscuro. El cambio se aplica inmediatamente a todos los elementos de la interfaz.
+
+---
+
+## Sololucion de problemas comunes
+
+**La aplicacion no abre y muestra error de importacion**
+Verificar que todas las dependencias esten instaladas con `pip list` y que el entorno virtual este activo.
+
+**Error de conexion a la base de datos**
+Revisar que MySQL este ejecutandose, que los datos en `persistencia.py` sean correctos y que el usuario tenga permisos sobre la base de datos `gestion_academica`.
+
+**El drag and drop no funciona**
+Confirmar que `tkinterdnd2` este instalado correctamente. En algunos sistemas puede requerir instalacion manual desde el repositorio oficial.
+
+**Los archivos exportados no se abren con doble clic**
+El metodo `os.startfile` solo funciona en Windows. En Linux o macOS se debe abrir el archivo manualmente desde la carpeta `reportes/`.
+
+---
+
+## Dependencias
+
+| Paquete       | Version minima | Uso                                      |
+|---------------|----------------|------------------------------------------|
+| pymysql       | 1.0            | Conexion a base de datos MySQL           |
+| tkcalendar    | 1.6            | Selector de fecha en formularios         |
+| tkinterdnd2   | 0.3            | Soporte de drag and drop en Tkinter      |
+| pillow        | 9.0            | Procesamiento de imagenes (fotografia)   |
+| xlsxwriter    | 3.0            | Exportacion a Excel                      |
+| reportlab     | 4.0            | Exportacion a PDF                        |

@@ -89,6 +89,7 @@ class Fabrica:
             tipo_contrato        = datos['tipo_contrato'],
             departamento         = datos['departamento'],
             telefono             = datos.get('telefono'),
+            fotografia          = datos.get('fotografia'),
         )
 
     # Crea un objeto Asignatura

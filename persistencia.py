@@ -105,8 +105,8 @@ class ProfesorRepositorio(BaseRepositorio):
         self.ejecutar_sp("sp_profesor_actualizar", prf)
     
     # Nota: este método no sigue la misma firma que la clase base
-    def eliminar(self, prf):
-        self.ejecutar_sp("sp_profesor_eliminar", (prf.codigo_empleado,))
+    def eliminar_por_id(self, id_valor):
+        self.ejecutar_sp("sp_profesor_eliminar", (id_valor,))
 
 
 # Repositorio de Asignatura
@@ -122,8 +122,8 @@ class AsignaturaRepositorio(BaseRepositorio):
         self.ejecutar_sp("sp_asignatura_actualizar", asg)
 
     # Recibe objeto completo pero usa solo su ID
-    def eliminar_por_id(self, asg):
-        self.ejecutar_sp("sp_asignatura_eliminar", (asg.codigo_asignatura,))
+    def eliminar_por_id(self, id_valor):
+        self.ejecutar_sp("sp_asignatura_eliminar", (id_valor,))
 
 
 # Repositorio de Curso
@@ -139,5 +139,5 @@ class CursoRepositorio(BaseRepositorio):
         self.ejecutar_sp("sp_curso_actualizar", crs)
 
     # Igual que arriba: recibe objeto pero usa solo el ID
-    def eliminar_por_id(self, crs):
-        self.ejecutar_sp("sp_curso_eliminar", (crs.codigo_curso,))  # ✅ sin S
+    def eliminar_por_id(self, id_valor):
+        self.ejecutar_sp("sp_curso_eliminar", (id_valor,))  # ✅ sin S

@@ -1,6 +1,10 @@
 from fabrica import Fabrica
 from persistencia import EstudianteRepositorio, ProfesorRepositorio, AsignaturaRepositorio, CursoRepositorio
 from dominio import Estudiante, Profesor, Asignatura, Curso
+from reportlab.platypus import SimpleDocTemplate, Table
+import xlsxwriter
+import datetime 
+import os
 
 class Controlador:
 
@@ -48,7 +52,7 @@ class Controlador:
 
 
     # Método para obtener todos los registros de una entidad
-    def Obtener(self, nombre_entidad: str):
+    def obtener(self, nombre_entidad: str):
         # Obtener repositorio según el nombre
         repo = self._obtener_repositorio(nombre_entidad)
 
@@ -61,7 +65,6 @@ class Controlador:
         
         # Convertir resultados a string para mostrarlos
         return "\n".join(str(fila) for fila in resultados)
-
 
     # Método para actualizar un registro
     def Actualizar(self, datos: dict):
@@ -97,3 +100,53 @@ class Controlador:
     
         # Llamar al método de eliminación del repositorio
         self._obtener_repositorio(nombre_entidad).eliminar_por_id(id_valor)
+    
+    
+    def exportar_a_excel(self, nombre_entidad: str):
+
+        repo = self._obtener_repositorio(nombre_entidad)
+        resultados = repo.obtener()
+
+        if not resultados:
+            return False
+
+        carpeta = r"reportes"
+        os.makedirs(carpeta, exist_ok=True)
+
+        ruta = os.path.join(carpeta, f"{nombre_entidad}.xlsx")
+
+        workbook = xlsxwriter.Workbook(ruta)
+        worksheet = workbook.add_worksheet()
+
+        for fila_idx, fila in enumerate(resultados):
+            for col_idx, valor in enumerate(fila):
+                worksheet.write(fila_idx, col_idx, valor)
+
+        workbook.close()
+
+        return f"Archivo guardado en: {ruta}"
+    
+    def exportar_a_pdf(self, nombre_entidad: str):
+
+        repo = self._obtener_repositorio(nombre_entidad)
+        resultados = repo.obtener()
+
+        if not resultados:
+            return False
+
+        carpeta = r"reportes"
+        os.makedirs(carpeta, exist_ok=True)
+
+        ruta = os.path.join(carpeta, f"{nombre_entidad}.pdf")
+
+        doc = SimpleDocTemplate(ruta)
+
+        data = list(resultados)
+
+        tabla = Table(data)
+
+        elementos = [tabla]
+        doc.build(elementos)
+
+        return f"PDF generado en: {ruta}"
+

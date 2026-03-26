@@ -52,6 +52,7 @@ class Profesor():
             tipo_contrato: str,         # Tipo de contrato
             departamento: str,          # Departamento académico
             telefono: Optional[str] = None, # Teléfono opcional
+            fotografia: Optional[bytes] = None
         ):
             self.codigo_empleado      = codigo_empleado
             self.nombres              = nombres
@@ -67,6 +68,7 @@ class Profesor():
             self.tipo_contrato        = tipo_contrato
             self.departamento         = departamento
             self.telefono             = telefono
+            self.fotografia           = fotografia
 
     #3
 # Clase que representa la entidad Asignatura
@@ -120,8 +122,6 @@ class Curso():
             self.horario_horas          = horario_horas
             self.cupo_maximo            = cupo_maximo
             self.metodologia_evaluacion = metodologia_evaluacion
-            # Si no se pasa lista, se inicializa vacía (evita problemas de mutabilidad)
-            self.lista_estudiantes      = lista_estudiantes if lista_estudiantes is not None else []
 
 #-----------------------------------------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------------------------
